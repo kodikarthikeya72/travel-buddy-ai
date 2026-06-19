@@ -9,38 +9,127 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as RegisterRouteImport } from './routes/register'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthDashboardRouteImport } from './routes/_auth.dashboard'
+import { Route as AuthCreateTripRouteImport } from './routes/_auth.create-trip'
+import { Route as AuthTripIdRouteImport } from './routes/_auth.trip.$id'
 
+const RegisterRoute = RegisterRouteImport.update({
+  id: '/register',
+  path: '/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/_auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthDashboardRoute = AuthDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthCreateTripRoute = AuthCreateTripRouteImport.update({
+  id: '/create-trip',
+  path: '/create-trip',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthTripIdRoute = AuthTripIdRouteImport.update({
+  id: '/trip/$id',
+  path: '/trip/$id',
+  getParentRoute: () => AuthRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
+  '/register': typeof RegisterRoute
+  '/create-trip': typeof AuthCreateTripRoute
+  '/dashboard': typeof AuthDashboardRoute
+  '/trip/$id': typeof AuthTripIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
+  '/register': typeof RegisterRoute
+  '/create-trip': typeof AuthCreateTripRoute
+  '/dashboard': typeof AuthDashboardRoute
+  '/trip/$id': typeof AuthTripIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_auth': typeof AuthRouteWithChildren
+  '/login': typeof LoginRoute
+  '/register': typeof RegisterRoute
+  '/_auth/create-trip': typeof AuthCreateTripRoute
+  '/_auth/dashboard': typeof AuthDashboardRoute
+  '/_auth/trip/$id': typeof AuthTripIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/register'
+    | '/create-trip'
+    | '/dashboard'
+    | '/trip/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/login' | '/register' | '/create-trip' | '/dashboard' | '/trip/$id'
+  id:
+    | '__root__'
+    | '/'
+    | '/_auth'
+    | '/login'
+    | '/register'
+    | '/_auth/create-trip'
+    | '/_auth/dashboard'
+    | '/_auth/trip/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthRoute: typeof AuthRouteWithChildren
+  LoginRoute: typeof LoginRoute
+  RegisterRoute: typeof RegisterRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/register': {
+      id: '/register'
+      path: '/register'
+      fullPath: '/register'
+      preLoaderRoute: typeof RegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_auth': {
+      id: '/_auth'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,22 +137,50 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_auth/dashboard': {
+      id: '/_auth/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthDashboardRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/create-trip': {
+      id: '/_auth/create-trip'
+      path: '/create-trip'
+      fullPath: '/create-trip'
+      preLoaderRoute: typeof AuthCreateTripRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/trip/$id': {
+      id: '/_auth/trip/$id'
+      path: '/trip/$id'
+      fullPath: '/trip/$id'
+      preLoaderRoute: typeof AuthTripIdRouteImport
+      parentRoute: typeof AuthRoute
+    }
   }
 }
 
+interface AuthRouteChildren {
+  AuthCreateTripRoute: typeof AuthCreateTripRoute
+  AuthDashboardRoute: typeof AuthDashboardRoute
+  AuthTripIdRoute: typeof AuthTripIdRoute
+}
+
+const AuthRouteChildren: AuthRouteChildren = {
+  AuthCreateTripRoute: AuthCreateTripRoute,
+  AuthDashboardRoute: AuthDashboardRoute,
+  AuthTripIdRoute: AuthTripIdRoute,
+}
+
+const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthRoute: AuthRouteWithChildren,
+  LoginRoute: LoginRoute,
+  RegisterRoute: RegisterRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
