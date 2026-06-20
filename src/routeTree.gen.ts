@@ -15,7 +15,6 @@ import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthDashboardRouteImport } from './routes/_auth.dashboard'
 import { Route as AuthCreateTripRouteImport } from './routes/_auth.create-trip'
-import { Route as AuthTripIdRouteImport } from './routes/_auth.trip.$id'
 
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
@@ -46,11 +45,6 @@ const AuthCreateTripRoute = AuthCreateTripRouteImport.update({
   path: '/create-trip',
   getParentRoute: () => AuthRoute,
 } as any)
-const AuthTripIdRoute = AuthTripIdRouteImport.update({
-  id: '/trip/$id',
-  path: '/trip/$id',
-  getParentRoute: () => AuthRoute,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -58,7 +52,6 @@ export interface FileRoutesByFullPath {
   '/register': typeof RegisterRoute
   '/create-trip': typeof AuthCreateTripRoute
   '/dashboard': typeof AuthDashboardRoute
-  '/trip/$id': typeof AuthTripIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -66,7 +59,6 @@ export interface FileRoutesByTo {
   '/register': typeof RegisterRoute
   '/create-trip': typeof AuthCreateTripRoute
   '/dashboard': typeof AuthDashboardRoute
-  '/trip/$id': typeof AuthTripIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -76,19 +68,12 @@ export interface FileRoutesById {
   '/register': typeof RegisterRoute
   '/_auth/create-trip': typeof AuthCreateTripRoute
   '/_auth/dashboard': typeof AuthDashboardRoute
-  '/_auth/trip/$id': typeof AuthTripIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | '/'
-    | '/login'
-    | '/register'
-    | '/create-trip'
-    | '/dashboard'
-    | '/trip/$id'
+  fullPaths: '/' | '/login' | '/register' | '/create-trip' | '/dashboard'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/register' | '/create-trip' | '/dashboard' | '/trip/$id'
+  to: '/' | '/login' | '/register' | '/create-trip' | '/dashboard'
   id:
     | '__root__'
     | '/'
@@ -97,7 +82,6 @@ export interface FileRouteTypes {
     | '/register'
     | '/_auth/create-trip'
     | '/_auth/dashboard'
-    | '/_auth/trip/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -151,26 +135,17 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthCreateTripRouteImport
       parentRoute: typeof AuthRoute
     }
-    '/_auth/trip/$id': {
-      id: '/_auth/trip/$id'
-      path: '/trip/$id'
-      fullPath: '/trip/$id'
-      preLoaderRoute: typeof AuthTripIdRouteImport
-      parentRoute: typeof AuthRoute
-    }
   }
 }
 
 interface AuthRouteChildren {
   AuthCreateTripRoute: typeof AuthCreateTripRoute
   AuthDashboardRoute: typeof AuthDashboardRoute
-  AuthTripIdRoute: typeof AuthTripIdRoute
 }
 
 const AuthRouteChildren: AuthRouteChildren = {
   AuthCreateTripRoute: AuthCreateTripRoute,
   AuthDashboardRoute: AuthDashboardRoute,
-  AuthTripIdRoute: AuthTripIdRoute,
 }
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
