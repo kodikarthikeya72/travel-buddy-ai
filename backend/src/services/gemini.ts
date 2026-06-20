@@ -29,6 +29,7 @@ export interface TripInput {
   interests: string[];
   travelMonth: string;
   travelStyle: string;
+  weather?: { tempHighC: number; tempLowC: number; precipitationMm: number };
 }
 
 export async function generateItinerary(input: TripInput): Promise<GeneratedTrip> {
@@ -41,6 +42,10 @@ export async function generateItinerary(input: TripInput): Promise<GeneratedTrip
     generationConfig: { responseMimeType: "application/json" },
   });
 
+  const weatherNote = input.weather
+    ? `\nWeather context for ${input.travelMonth}: avg high ${input.weather.tempHighC}°C, avg low ${input.weather.tempLowC}°C, ${input.weather.precipitationMm}mm precipitation. Tailor outdoor vs indoor activities accordingly and add brief weather-aware tips.`
+    : "";
+
   const prompt = `Generate a travel itinerary for:
 
 Destination: ${input.destination}
@@ -48,7 +53,7 @@ Days: ${input.days}
 Budget: ${input.budgetType}
 Interests: ${input.interests.join(", ")}
 Travel Month: ${input.travelMonth}
-Travel Style: ${input.travelStyle}
+Travel Style: ${input.travelStyle}${weatherNote}
 
 Return ONLY valid JSON with this exact shape:
 {
@@ -65,4 +70,26 @@ The itinerary must contain exactly ${input.days} day objects. Each day must cont
   try { parsed = JSON.parse(text); }
   catch { throw Object.assign(new Error("AI returned invalid JSON"), { status: 502 }); }
   return itinerarySchema.parse(parsed);
+}
+
+export async function regenerateDay(
+  input: TripInput,
+  dayNumber: number,
+  avoid: string[],
+): Promise<string[]> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw Object.assign(new Error("GEMINI_API_KEY is not set"), { status: 500 });
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const model = genAI.getGenerativeModel({
+    model: "gemini-1.5-flash",
+    generationConfig: { responseMimeType: "application/json" },
+  });
+  const prompt = `Suggest a fresh single-day itinerary (3-5 concise activities) for day ${dayNumber} of a ${input.days}-day trip to ${input.destination} in ${input.travelMonth}. Style: ${input.travelStyle}. Budget: ${input.budgetType}. Interests: ${input.interests.join(", ")}.
+Avoid repeating these activities: ${avoid.join(" | ") || "(none)"}.
+Return ONLY valid JSON: { "activities": ["...", "..."] }`;
+  const result = await model.generateContent(prompt);
+  const text = result.response.text();
+  const parsed = JSON.parse(text) as { activities: unknown };
+  const arr = z.array(z.string()).parse(parsed.activities);
+  return arr;
 }
