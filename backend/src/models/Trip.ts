@@ -17,6 +17,11 @@ const tripSchema = new Schema({
     total: Number,
   },
   hotels: [{ name: String, rating: String, priceRange: String }],
+  weather: {
+    tempHighC: Number,
+    tempLowC: Number,
+    precipitationMm: Number,
+  },
   createdAt: { type: Date, default: Date.now },
 });
 
