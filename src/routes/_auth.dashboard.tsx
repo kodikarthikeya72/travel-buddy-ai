@@ -8,6 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader,
+  AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Plus, MapPin, Calendar, Trash2, Search, Compass } from "lucide-react";
 
 export const Route = createFileRoute("/_auth/dashboard")({
@@ -20,7 +25,7 @@ function Dashboard() {
   const qc = useQueryClient();
   const [q, setQ] = useState("");
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["trips"],
     queryFn: () => api<{ trips: Trip[] }>("/api/trips").then((r) => r.trips),
   });
@@ -56,11 +61,42 @@ function Dashboard() {
       </div>
 
       <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {isLoading && Array.from({ length: 3 }).map((_, i) => (
-          <Skeleton key={i} className="h-48 rounded-xl" />
+        {isLoading && Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="rounded-xl border bg-card p-5 space-y-3">
+            <div className="flex justify-between">
+              <Skeleton className="h-5 w-2/3" />
+              <Skeleton className="h-5 w-14" />
+            </div>
+            <Skeleton className="h-4 w-1/2" />
+            <div className="flex gap-1.5 pt-1">
+              <Skeleton className="h-5 w-12" />
+              <Skeleton className="h-5 w-16" />
+              <Skeleton className="h-5 w-10" />
+            </div>
+            <Skeleton className="h-9 w-full mt-4" />
+          </div>
         ))}
 
-        {!isLoading && trips.length === 0 && (
+        {isError && !isLoading && (
+          <div className="col-span-full rounded-xl border border-destructive/30 bg-destructive/5 p-8 text-center">
+            <p className="font-semibold">Couldn't load your trips</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {error instanceof Error ? error.message : "Please try again."}
+            </p>
+            <Button variant="outline" className="mt-4" onClick={() => refetch()}>Retry</Button>
+          </div>
+        )}
+
+        {!isLoading && !isError && data && trips.length === 0 && q && (
+          <div className="col-span-full rounded-xl border border-dashed bg-card p-12 text-center">
+            <Search className="mx-auto h-10 w-10 text-muted-foreground" />
+            <h3 className="mt-4 font-semibold">No matches for "{q}"</h3>
+            <p className="mt-1 text-sm text-muted-foreground">Try a different destination.</p>
+            <Button variant="outline" className="mt-4" onClick={() => setQ("")}>Clear search</Button>
+          </div>
+        )}
+
+        {!isLoading && !isError && data && data.length === 0 && (
           <div className="col-span-full rounded-xl border border-dashed bg-card p-12 text-center">
             <Compass className="mx-auto h-10 w-10 text-muted-foreground" />
             <h3 className="mt-4 font-semibold">No trips yet</h3>
@@ -91,14 +127,25 @@ function Dashboard() {
               <Button asChild size="sm" className="flex-1">
                 <Link to="/trip/$id" params={{ id: t._id }}>View</Link>
               </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => { if (confirm("Delete this trip?")) del.mutate(t._id); }}
-                disabled={del.isPending}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button size="sm" variant="outline" disabled={del.isPending} aria-label="Delete trip">
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete this trip?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      "{t.destination}" will be permanently removed. This can't be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => del.mutate(t._id)}>Delete</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           </div>
         ))}

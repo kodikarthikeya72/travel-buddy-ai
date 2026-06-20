@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Loader2 } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const INTERESTS = ["Food", "Culture", "Adventure", "Shopping", "Nature", "History", "Nightlife"];
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
@@ -120,10 +121,30 @@ function CreateTrip() {
         </div>
 
         <Button type="submit" size="lg" className="w-full" disabled={gen.isPending}>
-          <Sparkles className="h-4 w-4 mr-2" />
+          {gen.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
           {gen.isPending ? "Generating your itinerary…" : "Generate AI itinerary"}
         </Button>
       </form>
+
+      {gen.isPending && (
+        <div className="mt-6 rounded-xl border bg-card p-6 shadow-sm" aria-live="polite">
+          <div className="flex items-center gap-3">
+            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+            <div>
+              <p className="font-medium">Crafting your itinerary</p>
+              <p className="text-sm text-muted-foreground">
+                Checking weather, picking activities, estimating budget… this can take up to a minute.
+              </p>
+            </div>
+          </div>
+          <div className="mt-5 space-y-3">
+            <Skeleton className="h-4 w-1/3" />
+            <Skeleton className="h-4 w-5/6" />
+            <Skeleton className="h-4 w-4/6" />
+            <Skeleton className="h-4 w-3/6" />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
