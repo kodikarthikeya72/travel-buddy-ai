@@ -60,5 +60,6 @@ export type Trip = {
     total: number;
   };
   hotels: { name: string; rating: string; priceRange: string }[];
+  weather?: { tempHighC: number; tempLowC: number; precipitationMm: number };
   createdAt: string;
 };
