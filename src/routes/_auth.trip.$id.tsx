@@ -67,16 +67,29 @@ function TripPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
-        <Skeleton className="h-10 w-1/3" />
-        <Skeleton className="h-64" />
+      <div className="space-y-6">
+        <Skeleton className="h-8 w-24" />
+        <div className="space-y-3">
+          <Skeleton className="h-10 w-1/2" />
+          <Skeleton className="h-4 w-1/3" />
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)}
+        </div>
+        <div className="space-y-3">
+          {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-32 rounded-xl" />)}
+        </div>
       </div>
     );
   }
   if (error || !data) {
     return (
-      <div className="text-center py-16">
-        <p className="text-muted-foreground">Trip not found.</p>
+      <div className="rounded-xl border border-dashed bg-card p-12 text-center max-w-md mx-auto">
+        <MapPin className="mx-auto h-10 w-10 text-muted-foreground" />
+        <h2 className="mt-4 font-semibold">Trip not found</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {error instanceof Error ? error.message : "It may have been deleted."}
+        </p>
         <Button asChild className="mt-4"><Link to="/dashboard">Back to dashboard</Link></Button>
       </div>
     );
