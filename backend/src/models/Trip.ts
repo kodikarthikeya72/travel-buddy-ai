@@ -22,6 +22,8 @@ const tripSchema = new Schema({
     tempLowC: Number,
     precipitationMm: Number,
   },
+  coords: { lat: Number, lng: Number },
+  shareToken: { type: String, index: true, sparse: true, default: null },
   createdAt: { type: Date, default: Date.now },
 });
 

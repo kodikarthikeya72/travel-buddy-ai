@@ -3,7 +3,8 @@ import { z } from "zod";
 import { Trip } from "../models/Trip.js";
 import { requireAuth, type AuthRequest } from "../middleware/auth.js";
 import { generateItinerary, regenerateDay } from "../services/gemini.js";
-import { getWeatherSummary } from "../services/weather.js";
+import { getWeatherSummary, geocode } from "../services/weather.js";
+import crypto from "crypto";
 
 const router = Router();
 router.use(requireAuth);
@@ -35,7 +36,10 @@ router.get("/:id", async (req: AuthRequest, res, next) => {
 router.post("/generate", async (req: AuthRequest, res, next) => {
   try {
     const input = generateSchema.parse(req.body);
-    const weather = await getWeatherSummary(input.destination, input.travelMonth);
+    const [weather, coords] = await Promise.all([
+      getWeatherSummary(input.destination, input.travelMonth),
+      geocode(input.destination),
+    ]);
     const ai = await generateItinerary({ ...input, weather: weather ?? undefined });
     const trip = await Trip.create({
       userId: req.userId,
@@ -49,6 +53,7 @@ router.post("/generate", async (req: AuthRequest, res, next) => {
       budgetEstimate: ai.budget,
       hotels: ai.hotels,
       weather: weather ?? undefined,
+      coords: coords ?? undefined,
     });
     res.json({ trip });
   } catch (e) { next(e); }
@@ -104,6 +109,31 @@ router.delete("/:id", async (req: AuthRequest, res, next) => {
   try {
     const result = await Trip.deleteOne({ _id: req.params.id, userId: req.userId });
     if (result.deletedCount === 0) return res.status(404).json({ error: { message: "Not found" } });
+    res.json({ ok: true });
+  } catch (e) { next(e); }
+});
+
+router.post("/:id/share", async (req: AuthRequest, res, next) => {
+  try {
+    const token = crypto.randomBytes(16).toString("hex");
+    const trip = await Trip.findOneAndUpdate(
+      { _id: req.params.id, userId: req.userId },
+      { $set: { shareToken: token } },
+      { new: true },
+    );
+    if (!trip) return res.status(404).json({ error: { message: "Trip not found" } });
+    res.json({ shareToken: token });
+  } catch (e) { next(e); }
+});
+
+router.delete("/:id/share", async (req: AuthRequest, res, next) => {
+  try {
+    const trip = await Trip.findOneAndUpdate(
+      { _id: req.params.id, userId: req.userId },
+      { $set: { shareToken: null } },
+      { new: true },
+    );
+    if (!trip) return res.status(404).json({ error: { message: "Trip not found" } });
     res.json({ ok: true });
   } catch (e) { next(e); }
 });

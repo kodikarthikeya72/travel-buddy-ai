@@ -11,6 +11,21 @@ export interface WeatherSummary {
   precipitationMm: number;
 }
 
+export interface GeoLocation { lat: number; lng: number }
+
+export async function geocode(destination: string): Promise<GeoLocation | null> {
+  try {
+    const geo = await fetch(
+      `https://geocoding-api.open-meteo.com/v1/search?count=1&name=${encodeURIComponent(destination)}`,
+    ).then((r) => r.json() as Promise<{ results?: { latitude: number; longitude: number }[] }>);
+    const loc = geo.results?.[0];
+    if (!loc) return null;
+    return { lat: loc.latitude, lng: loc.longitude };
+  } catch {
+    return null;
+  }
+}
+
 export async function getWeatherSummary(
   destination: string,
   travelMonth: string,
