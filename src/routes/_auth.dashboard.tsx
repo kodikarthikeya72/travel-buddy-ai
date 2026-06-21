@@ -13,7 +13,8 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader,
   AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Plus, MapPin, Calendar, Trash2, Search, Compass } from "lucide-react";
+import { Plus, MapPin, Calendar, Trash2, Search, Compass, Wallet, PlaneTakeoff, CalendarClock } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, Tooltip as RTooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 
 export const Route = createFileRoute("/_auth/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — Wayfare" }] }),
@@ -43,6 +44,21 @@ function Dashboard() {
     t.destination.toLowerCase().includes(q.toLowerCase()),
   );
 
+  const all = data ?? [];
+  const totalTrips = all.length;
+  const totalBudget = all.reduce((s, t) => s + (t.budgetEstimate?.total ?? 0), 0);
+  const MONTHS = ["january","february","march","april","may","june","july","august","september","october","november","december"];
+  const nowMonth = new Date().getMonth();
+  const upcoming = all.filter((t) => {
+    const idx = MONTHS.indexOf((t.travelMonth || "").toLowerCase());
+    return idx >= 0 && ((idx - nowMonth + 12) % 12) <= 3;
+  }).length;
+  const byMonth = MONTHS.map((m, i) => ({
+    month: m.slice(0, 3),
+    trips: all.filter((t) => (t.travelMonth || "").toLowerCase() === m).length,
+    _i: i,
+  }));
+
   return (
     <div>
       <div className="flex flex-wrap items-end justify-between gap-4">
@@ -54,6 +70,28 @@ function Dashboard() {
           <Link to="/create-trip"><Plus className="h-4 w-4 mr-1" /> Create new trip</Link>
         </Button>
       </div>
+
+      {!isLoading && !isError && totalTrips > 0 && (
+        <div className="mt-8 grid gap-4 md:grid-cols-3">
+          <StatCard icon={PlaneTakeoff} label="Trips planned" value={totalTrips.toString()} />
+          <StatCard icon={Wallet} label="Total budgeted" value={`$${totalBudget.toLocaleString()}`} />
+          <StatCard icon={CalendarClock} label="Upcoming (next 3 months)" value={upcoming.toString()} />
+          <div className="md:col-span-3 rounded-xl border bg-card p-5">
+            <h3 className="font-semibold text-sm text-muted-foreground">Trips by travel month</h3>
+            <div className="h-48 mt-3">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={byMonth}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                  <YAxis allowDecimals={false} stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                  <RTooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }} />
+                  <Bar dataKey="trips" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="mt-8 relative max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
