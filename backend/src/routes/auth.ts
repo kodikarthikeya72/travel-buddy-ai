@@ -54,4 +54,35 @@ router.get("/me", requireAuth, async (req: AuthRequest, res, next) => {
   } catch (e) { next(e); }
 });
 
+const updateNameSchema = z.object({ name: z.string().min(1).max(80) });
+router.patch("/me", requireAuth, async (req: AuthRequest, res, next) => {
+  try {
+    const { name } = updateNameSchema.parse(req.body);
+    const user = await User.findByIdAndUpdate(
+      req.userId,
+      { $set: { name } },
+      { new: true },
+    );
+    if (!user) return res.status(404).json({ error: { message: "Not found" } });
+    res.json({ user: { _id: user.id, name: user.name, email: user.email } });
+  } catch (e) { next(e); }
+});
+
+const passwordSchema = z.object({
+  currentPassword: z.string().min(1),
+  newPassword: z.string().min(6).max(200),
+});
+router.post("/change-password", requireAuth, async (req: AuthRequest, res, next) => {
+  try {
+    const { currentPassword, newPassword } = passwordSchema.parse(req.body);
+    const user = await User.findById(req.userId);
+    if (!user) return res.status(404).json({ error: { message: "Not found" } });
+    const ok = await bcrypt.compare(currentPassword, user.password);
+    if (!ok) return res.status(401).json({ error: { message: "Current password is incorrect" } });
+    user.password = await bcrypt.hash(newPassword, 10);
+    await user.save();
+    res.json({ ok: true });
+  } catch (e) { next(e); }
+});
+
 export default router;

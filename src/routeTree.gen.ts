@@ -13,6 +13,8 @@ import { Route as RegisterRouteImport } from './routes/register'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ShareTokenRouteImport } from './routes/share.$token'
+import { Route as AuthProfileRouteImport } from './routes/_auth.profile'
 import { Route as AuthDashboardRouteImport } from './routes/_auth.dashboard'
 import { Route as AuthCreateTripRouteImport } from './routes/_auth.create-trip'
 import { Route as AuthTripIdRouteImport } from './routes/_auth.trip.$id'
@@ -36,6 +38,16 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ShareTokenRoute = ShareTokenRouteImport.update({
+  id: '/share/$token',
+  path: '/share/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthProfileRoute = AuthProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => AuthRoute,
+} as any)
 const AuthDashboardRoute = AuthDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -58,6 +70,8 @@ export interface FileRoutesByFullPath {
   '/register': typeof RegisterRoute
   '/create-trip': typeof AuthCreateTripRoute
   '/dashboard': typeof AuthDashboardRoute
+  '/profile': typeof AuthProfileRoute
+  '/share/$token': typeof ShareTokenRoute
   '/trip/$id': typeof AuthTripIdRoute
 }
 export interface FileRoutesByTo {
@@ -66,6 +80,8 @@ export interface FileRoutesByTo {
   '/register': typeof RegisterRoute
   '/create-trip': typeof AuthCreateTripRoute
   '/dashboard': typeof AuthDashboardRoute
+  '/profile': typeof AuthProfileRoute
+  '/share/$token': typeof ShareTokenRoute
   '/trip/$id': typeof AuthTripIdRoute
 }
 export interface FileRoutesById {
@@ -76,6 +92,8 @@ export interface FileRoutesById {
   '/register': typeof RegisterRoute
   '/_auth/create-trip': typeof AuthCreateTripRoute
   '/_auth/dashboard': typeof AuthDashboardRoute
+  '/_auth/profile': typeof AuthProfileRoute
+  '/share/$token': typeof ShareTokenRoute
   '/_auth/trip/$id': typeof AuthTripIdRoute
 }
 export interface FileRouteTypes {
@@ -86,9 +104,19 @@ export interface FileRouteTypes {
     | '/register'
     | '/create-trip'
     | '/dashboard'
+    | '/profile'
+    | '/share/$token'
     | '/trip/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/register' | '/create-trip' | '/dashboard' | '/trip/$id'
+  to:
+    | '/'
+    | '/login'
+    | '/register'
+    | '/create-trip'
+    | '/dashboard'
+    | '/profile'
+    | '/share/$token'
+    | '/trip/$id'
   id:
     | '__root__'
     | '/'
@@ -97,6 +125,8 @@ export interface FileRouteTypes {
     | '/register'
     | '/_auth/create-trip'
     | '/_auth/dashboard'
+    | '/_auth/profile'
+    | '/share/$token'
     | '/_auth/trip/$id'
   fileRoutesById: FileRoutesById
 }
@@ -105,6 +135,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRouteWithChildren
   LoginRoute: typeof LoginRoute
   RegisterRoute: typeof RegisterRoute
+  ShareTokenRoute: typeof ShareTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -137,6 +168,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/share/$token': {
+      id: '/share/$token'
+      path: '/share/$token'
+      fullPath: '/share/$token'
+      preLoaderRoute: typeof ShareTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_auth/profile': {
+      id: '/_auth/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof AuthProfileRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/_auth/dashboard': {
       id: '/_auth/dashboard'
       path: '/dashboard'
@@ -164,12 +209,14 @@ declare module '@tanstack/react-router' {
 interface AuthRouteChildren {
   AuthCreateTripRoute: typeof AuthCreateTripRoute
   AuthDashboardRoute: typeof AuthDashboardRoute
+  AuthProfileRoute: typeof AuthProfileRoute
   AuthTripIdRoute: typeof AuthTripIdRoute
 }
 
 const AuthRouteChildren: AuthRouteChildren = {
   AuthCreateTripRoute: AuthCreateTripRoute,
   AuthDashboardRoute: AuthDashboardRoute,
+  AuthProfileRoute: AuthProfileRoute,
   AuthTripIdRoute: AuthTripIdRoute,
 }
 
@@ -180,17 +227,8 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRouteWithChildren,
   LoginRoute: LoginRoute,
   RegisterRoute: RegisterRoute,
+  ShareTokenRoute: ShareTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

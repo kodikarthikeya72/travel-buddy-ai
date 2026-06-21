@@ -10,8 +10,12 @@ import { toast } from "sonner";
 import jsPDF from "jspdf";
 import {
   ArrowLeft, MapPin, Calendar, Plane, Hotel, Wallet, Utensils,
-  Ticket, Star, Download, RefreshCw, Plus, Trash2, Save, CloudSun,
+  Ticket, Star, Download, RefreshCw, Plus, Trash2, Save, CloudSun, Share2, Copy, Link2Off,
 } from "lucide-react";
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter,
+  DialogHeader, DialogTitle, DialogTrigger,
+} from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/_auth/trip/$id")({
   head: () => ({ meta: [{ title: "Trip — Wayfare" }] }),
@@ -19,6 +23,55 @@ export const Route = createFileRoute("/_auth/trip/$id")({
 });
 
 type DayPlan = { day: number; activities: string[] };
+
+function ShareDialogContent({
+  trip, onEnable, onRevoke, enabling, revoking,
+}: {
+  trip: Trip;
+  onEnable: () => void;
+  onRevoke: () => void;
+  enabling: boolean;
+  revoking: boolean;
+}) {
+  const url = trip.shareToken && typeof window !== "undefined"
+    ? `${window.location.origin}/share/${trip.shareToken}`
+    : "";
+  return (
+    <DialogContent>
+      <DialogHeader>
+        <DialogTitle>Share this trip</DialogTitle>
+        <DialogDescription>
+          Anyone with the link can view a read-only version. No login required.
+        </DialogDescription>
+      </DialogHeader>
+      {trip.shareToken ? (
+        <div className="space-y-3">
+          <div className="flex gap-2">
+            <Input readOnly value={url} onFocus={(e) => e.currentTarget.select()} />
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => { navigator.clipboard.writeText(url); toast.success("Link copied"); }}
+            >
+              <Copy className="h-4 w-4" />
+            </Button>
+          </div>
+          <DialogFooter>
+            <Button variant="destructive" onClick={onRevoke} disabled={revoking}>
+              <Link2Off className="h-4 w-4 mr-2" /> {revoking ? "Revoking…" : "Revoke link"}
+            </Button>
+          </DialogFooter>
+        </div>
+      ) : (
+        <DialogFooter>
+          <Button onClick={onEnable} disabled={enabling}>
+            <Share2 className="h-4 w-4 mr-2" /> {enabling ? "Generating…" : "Create share link"}
+          </Button>
+        </DialogFooter>
+      )}
+    </DialogContent>
+  );
+}
 
 function TripPage() {
   const { id } = Route.useParams();
@@ -30,6 +83,7 @@ function TripPage() {
 
   const [itinerary, setItinerary] = useState<DayPlan[]>([]);
   const [dirty, setDirty] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
 
   useEffect(() => {
     if (data) {
@@ -61,6 +115,23 @@ function TripPage() {
     onSuccess: (r) => {
       qc.setQueryData(["trip", id], r.trip);
       toast.success("Day regenerated");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const shareMut = useMutation({
+    mutationFn: () => api<{ shareToken: string }>(`/api/trips/${id}/share`, { method: "POST" }),
+    onSuccess: (r) => {
+      qc.setQueryData(["trip", id], (prev: Trip | undefined) => prev ? { ...prev, shareToken: r.shareToken } : prev);
+      toast.success("Share link enabled");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const revokeMut = useMutation({
+    mutationFn: () => api(`/api/trips/${id}/share`, { method: "DELETE" }),
+    onSuccess: () => {
+      qc.setQueryData(["trip", id], (prev: Trip | undefined) => prev ? { ...prev, shareToken: null } : prev);
+      toast.success("Share link revoked");
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -196,6 +267,20 @@ function TripPage() {
         >
           <Save className="h-4 w-4 mr-2" /> {saveMut.isPending ? "Saving..." : "Save changes"}
         </Button>
+        <Dialog open={shareOpen} onOpenChange={setShareOpen}>
+          <DialogTrigger asChild>
+            <Button variant="outline" size="sm">
+              <Share2 className="h-4 w-4 mr-2" /> Share
+            </Button>
+          </DialogTrigger>
+          <ShareDialogContent
+            trip={t}
+            onEnable={() => shareMut.mutate()}
+            onRevoke={() => revokeMut.mutate()}
+            enabling={shareMut.isPending}
+            revoking={revokeMut.isPending}
+          />
+        </Dialog>
       </div>
 
       {t.weather && (
@@ -208,6 +293,28 @@ function TripPage() {
             <strong>{t.weather.tempLowC}°C</strong>, with roughly{" "}
             <strong>{t.weather.precipitationMm}mm</strong> of precipitation. Itinerary is tuned to match.
           </p>
+        </section>
+      )}
+
+      {t.coords && (
+        <section className="mt-8">
+          <h2 className="text-xl font-semibold flex items-center gap-2"><MapPin className="h-5 w-5 text-accent" /> Map</h2>
+          <div className="mt-4 overflow-hidden rounded-xl border bg-card">
+            <iframe
+              title={`Map of ${t.destination}`}
+              className="w-full h-80 border-0"
+              loading="lazy"
+              src={`https://www.openstreetmap.org/export/embed.html?bbox=${t.coords.lng - 0.15},${t.coords.lat - 0.1},${t.coords.lng + 0.15},${t.coords.lat + 0.1}&layer=mapnik&marker=${t.coords.lat},${t.coords.lng}`}
+            />
+            <div className="p-3 text-xs text-muted-foreground flex justify-between">
+              <span>© OpenStreetMap contributors</span>
+              <a
+                className="text-primary hover:underline"
+                href={`https://www.openstreetmap.org/?mlat=${t.coords.lat}&mlon=${t.coords.lng}#map=12/${t.coords.lat}/${t.coords.lng}`}
+                target="_blank" rel="noreferrer"
+              >Open larger map</a>
+            </div>
+          </div>
         </section>
       )}
 

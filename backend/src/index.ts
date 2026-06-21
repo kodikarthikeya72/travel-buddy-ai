@@ -7,6 +7,7 @@ import rateLimit from "express-rate-limit";
 import { connectDB } from "./db.js";
 import authRoutes from "./routes/auth.js";
 import tripRoutes from "./routes/trips.js";
+import publicRoutes from "./routes/public.js";
 import { errorHandler } from "./middleware/error.js";
 
 const app = express();
@@ -23,6 +24,7 @@ const authLimiter = rateLimit({ windowMs: 60_000, max: 10 });
 const genLimiter = rateLimit({ windowMs: 60 * 60_000, max: 20 });
 
 app.use("/api/auth", authLimiter, authRoutes);
+app.use("/api/public", publicRoutes);
 app.use("/api/trips/generate", genLimiter);
 app.use("/api/trips", tripRoutes);
 

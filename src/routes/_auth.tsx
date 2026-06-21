@@ -49,6 +49,9 @@ function AuthLayout() {
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>{user.email}</DropdownMenuLabel>
               <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => navigate({ to: "/profile" })}>
+                <UserIcon className="h-4 w-4 mr-2" /> Profile
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => { logout(); navigate({ to: "/login" }); }}>
                 <LogOut className="h-4 w-4 mr-2" /> Log out
               </DropdownMenuItem>
