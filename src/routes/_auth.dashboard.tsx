@@ -22,6 +22,20 @@ export const Route = createFileRoute("/_auth/dashboard")({
 });
 
 function Dashboard() {
+  return <DashboardInner />;
+}
+
+function StatCard({ icon: Icon, label, value }: { icon: React.ComponentType<{ className?: string }>; label: string; value: string }) {
+  return (
+    <div className="rounded-xl border bg-card p-5">
+      <Icon className="h-5 w-5 text-primary" />
+      <p className="text-xs text-muted-foreground mt-2">{label}</p>
+      <p className="text-2xl font-bold mt-1">{value}</p>
+    </div>
+  );
+}
+
+function DashboardInner() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const [q, setQ] = useState("");
